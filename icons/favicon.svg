@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <defs>
+    <linearGradient id="scaleGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#2196F3;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#1976D2;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+
+  <!-- 体重計の台座 -->
+  <rect x="15" y="55" width="70" height="35" rx="5" fill="url(#scaleGradient)"/>
+
+  <!-- 体重計のディスプレイ -->
+  <rect x="25" y="62" width="50" height="18" rx="3" fill="#E3F2FD"/>
+
+  <!-- 体重の数字 -->
+  <text x="50" y="75" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="#1976D2" text-anchor="middle">70.5</text>
+
+  <!-- 人のアイコン -->
+  <circle cx="50" cy="25" r="8" fill="#4CAF50"/>
+  <path d="M 50 35 L 50 45 M 42 40 L 58 40 M 50 45 L 42 55 M 50 45 L 58 55" stroke="#4CAF50" stroke-width="3" stroke-linecap="round" fill="none"/>
+</svg>
