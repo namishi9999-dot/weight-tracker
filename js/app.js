@@ -14,6 +14,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // イベントリスナーを設定
     setupEventListeners();
+
+    // 身長が未設定の場合、設定モーダルを表示
+    checkInitialSetup();
 });
 
 /**
@@ -33,6 +36,43 @@ function setupEventListeners() {
     const nextMonthBtn = document.getElementById('nextMonth');
     prevMonthBtn.addEventListener('click', previousMonth);
     nextMonthBtn.addEventListener('click', nextMonth);
+
+    // 設定ボタン
+    const settingsBtn = document.getElementById('settingsBtn');
+    settingsBtn.addEventListener('click', openSettingsModal);
+
+    // モーダル閉じるボタン
+    const closeModal = document.getElementById('closeModal');
+    closeModal.addEventListener('click', closeSettingsModal);
+
+    // 設定保存ボタン
+    const saveSettings = document.getElementById('saveSettings');
+    saveSettings.addEventListener('click', handleSaveSettings);
+
+    // モーダル背景クリックで閉じる
+    const modal = document.getElementById('settingsModal');
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+            closeSettingsModal();
+        }
+    });
+
+    // 体重入力時にBMIを更新
+    const weightInput = document.getElementById('weight');
+    weightInput.addEventListener('input', updateBMIDisplay);
+
+    // グラフ期間切り替えボタン
+    const periodBtns = document.querySelectorAll('.period-btn');
+    periodBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+            const period = parseInt(btn.dataset.period);
+            changePeriod(period);
+
+            // アクティブ状態を更新
+            periodBtns.forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+        });
+    });
 }
 
 /**
@@ -64,8 +104,12 @@ function handleFormSubmit(event) {
         return;
     }
 
+    // BMIを計算
+    const height = getHeight();
+    const bmi = height ? calculateBMI(weight, height) : null;
+
     // データを保存
-    const success = saveData(selectedDate, weight, bodyFat);
+    const success = saveData(selectedDate, weight, bodyFat, bmi);
 
     if (success) {
         // 保存成功のフィードバック
@@ -106,6 +150,9 @@ function handleDelete() {
         document.getElementById('bodyFat').value = '';
         document.getElementById('deleteBtn').style.display = 'none';
 
+        // BMI表示を非表示
+        document.getElementById('bmiDisplay').style.display = 'none';
+
         // カレンダーを再描画
         renderCalendar(currentYear, currentMonth);
 
@@ -116,6 +163,104 @@ function handleDelete() {
         updateChart();
     } else {
         showFeedback('データの削除に失敗しました', 'error');
+    }
+}
+
+/**
+ * 初期設定をチェック
+ */
+function checkInitialSetup() {
+    const height = getHeight();
+    if (!height) {
+        // 身長が未設定の場合、少し遅延してモーダルを表示
+        setTimeout(() => {
+            openSettingsModal();
+            showFeedback('BMI計算のために身長を設定してください', 'success');
+        }, 500);
+    }
+}
+
+/**
+ * 設定モーダルを開く
+ */
+function openSettingsModal() {
+    const modal = document.getElementById('settingsModal');
+    const heightInput = document.getElementById('heightInput');
+
+    // 現在の身長を表示
+    const currentHeight = getHeight();
+    if (currentHeight) {
+        heightInput.value = currentHeight;
+    }
+
+    modal.classList.add('show');
+}
+
+/**
+ * 設定モーダルを閉じる
+ */
+function closeSettingsModal() {
+    const modal = document.getElementById('settingsModal');
+    modal.classList.remove('show');
+}
+
+/**
+ * 設定を保存
+ */
+function handleSaveSettings() {
+    const heightInput = document.getElementById('heightInput');
+    const height = parseFloat(heightInput.value);
+
+    // バリデーション
+    if (isNaN(height) || height < 100 || height > 250) {
+        alert('身長は100〜250cmの範囲で入力してください');
+        return;
+    }
+
+    // 身長を保存
+    const success = saveHeight(height);
+
+    if (success) {
+        showFeedback('設定を保存しました', 'success');
+        closeSettingsModal();
+
+        // BMI表示を更新
+        updateBMIDisplay();
+
+        // グラフを更新（BMI線を表示）
+        updateChart();
+    } else {
+        showFeedback('設定の保存に失敗しました', 'error');
+    }
+}
+
+/**
+ * BMI表示を更新
+ */
+function updateBMIDisplay() {
+    const weightInput = document.getElementById('weight');
+    const bmiDisplay = document.getElementById('bmiDisplay');
+    const bmiValue = document.getElementById('bmiValue');
+    const bmiCategory = document.getElementById('bmiCategory');
+
+    const weight = parseFloat(weightInput.value);
+    const height = getHeight();
+
+    if (!height || isNaN(weight) || weight <= 0) {
+        bmiDisplay.style.display = 'none';
+        return;
+    }
+
+    const bmi = calculateBMI(weight, height);
+    if (bmi) {
+        const category = getBMICategory(bmi);
+
+        bmiDisplay.style.display = 'block';
+        bmiValue.textContent = bmi.toFixed(1);
+        bmiCategory.textContent = category.label;
+        bmiCategory.className = `bmi-category ${category.category}`;
+    } else {
+        bmiDisplay.style.display = 'none';
     }
 }
 

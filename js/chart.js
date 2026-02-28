@@ -1,6 +1,7 @@
 // グラフ描画モジュール（Chart.js使用）
 
 let weightChart = null;
+let currentPeriod = 30; // デフォルトは30日
 
 /**
  * グラフを初期化
@@ -20,8 +21,8 @@ function initChart() {
                     backgroundColor: 'rgba(33, 150, 243, 0.1)',
                     tension: 0.4,
                     yAxisID: 'y-weight',
-                    pointRadius: 4,
-                    pointHoverRadius: 6
+                    pointRadius: 3,
+                    pointHoverRadius: 5
                 },
                 {
                     label: '体脂肪率 (%)',
@@ -30,8 +31,18 @@ function initChart() {
                     backgroundColor: 'rgba(255, 152, 0, 0.1)',
                     tension: 0.4,
                     yAxisID: 'y-bodyFat',
-                    pointRadius: 4,
-                    pointHoverRadius: 6
+                    pointRadius: 3,
+                    pointHoverRadius: 5
+                },
+                {
+                    label: 'BMI',
+                    data: [],
+                    borderColor: '#4CAF50',
+                    backgroundColor: 'rgba(76, 175, 80, 0.1)',
+                    tension: 0.4,
+                    yAxisID: 'y-bmi',
+                    pointRadius: 3,
+                    pointHoverRadius: 5
                 }
             ]
         },
@@ -54,10 +65,13 @@ function initChart() {
                             if (label) {
                                 label += ': ';
                             }
+                            if (context.parsed.y === null) {
+                                return null;
+                            }
                             label += context.parsed.y.toFixed(1);
                             if (context.dataset.yAxisID === 'y-weight') {
                                 label += ' kg';
-                            } else {
+                            } else if (context.dataset.yAxisID === 'y-bodyFat') {
                                 label += ' %';
                             }
                             return label;
@@ -99,7 +113,7 @@ function initChart() {
                     position: 'right',
                     title: {
                         display: true,
-                        text: '体脂肪率 (%)',
+                        text: '体脂肪率 (%) / BMI',
                         color: '#FF9800'
                     },
                     ticks: {
@@ -108,6 +122,11 @@ function initChart() {
                     grid: {
                         drawOnChartArea: false
                     }
+                },
+                'y-bmi': {
+                    type: 'linear',
+                    display: false,
+                    position: 'right'
                 }
             }
         }
@@ -118,17 +137,23 @@ function initChart() {
 
 /**
  * グラフを更新
+ * @param {number} days - 表示期間（日数）
  */
-function updateChart() {
+function updateChart(days = currentPeriod) {
     if (!weightChart) return;
 
-    // 直近30日のデータを取得
-    const data = getDataRange(30);
+    currentPeriod = days;
+
+    // 指定期間のデータを取得
+    const data = getDataRange(days);
 
     // ラベル（日付）とデータを準備
     const labels = [];
     const weights = [];
     const bodyFats = [];
+    const bmis = [];
+
+    const height = getHeight();
 
     data.forEach(item => {
         // 日付を「M/D」形式に変換
@@ -137,6 +162,14 @@ function updateChart() {
         labels.push(label);
         weights.push(item.weight);
         bodyFats.push(item.bodyFat);
+
+        // BMIを計算（身長が設定されている場合）
+        if (height && item.weight) {
+            const bmi = calculateBMI(item.weight, height);
+            bmis.push(bmi);
+        } else {
+            bmis.push(null);
+        }
     });
 
     // データがない場合の処理
@@ -144,33 +177,53 @@ function updateChart() {
         labels.push('データなし');
         weights.push(null);
         bodyFats.push(null);
+        bmis.push(null);
     }
 
     // グラフを更新
     weightChart.data.labels = labels;
     weightChart.data.datasets[0].data = weights;
     weightChart.data.datasets[1].data = bodyFats;
+    weightChart.data.datasets[2].data = bmis;
+
+    // BMIデータセットの表示/非表示
+    weightChart.data.datasets[2].hidden = !height || bmis.every(b => b === null);
 
     // Y軸の範囲を自動調整
     if (weights.filter(w => w !== null).length > 0) {
         const validWeights = weights.filter(w => w !== null);
         const minWeight = Math.min(...validWeights);
         const maxWeight = Math.max(...validWeights);
-        const weightRange = maxWeight - minWeight;
+        const weightRange = maxWeight - minWeight || 1;
 
         weightChart.options.scales['y-weight'].min = Math.floor(minWeight - weightRange * 0.1);
         weightChart.options.scales['y-weight'].max = Math.ceil(maxWeight + weightRange * 0.1);
     }
 
-    if (bodyFats.filter(bf => bf !== null).length > 0) {
-        const validBodyFats = bodyFats.filter(bf => bf !== null);
-        const minBodyFat = Math.min(...validBodyFats);
-        const maxBodyFat = Math.max(...validBodyFats);
-        const bodyFatRange = maxBodyFat - minBodyFat;
+    // 体脂肪率とBMIの範囲を調整
+    const validBodyFats = bodyFats.filter(bf => bf !== null);
+    const validBMIs = bmis.filter(b => b !== null);
+    const allRightAxisValues = [...validBodyFats, ...validBMIs];
 
-        weightChart.options.scales['y-bodyFat'].min = Math.floor(minBodyFat - bodyFatRange * 0.1);
-        weightChart.options.scales['y-bodyFat'].max = Math.ceil(maxBodyFat + bodyFatRange * 0.1);
+    if (allRightAxisValues.length > 0) {
+        const minValue = Math.min(...allRightAxisValues);
+        const maxValue = Math.max(...allRightAxisValues);
+        const valueRange = maxValue - minValue || 1;
+
+        weightChart.options.scales['y-bodyFat'].min = Math.floor(minValue - valueRange * 0.1);
+        weightChart.options.scales['y-bodyFat'].max = Math.ceil(maxValue + valueRange * 0.1);
+        weightChart.options.scales['y-bmi'].min = weightChart.options.scales['y-bodyFat'].min;
+        weightChart.options.scales['y-bmi'].max = weightChart.options.scales['y-bodyFat'].max;
     }
 
     weightChart.update();
+}
+
+/**
+ * 表示期間を変更
+ * @param {number} days - 表示期間（日数）
+ */
+function changePeriod(days) {
+    currentPeriod = days;
+    updateChart(days);
 }

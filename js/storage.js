@@ -1,6 +1,7 @@
 // データ永続化モジュール（localStorage使用）
 
 const STORAGE_KEY = 'weightTrackerData';
+const SETTINGS_KEY = 'weightTrackerSettings';
 
 /**
  * すべてのデータを取得
@@ -31,16 +32,21 @@ function getData(date) {
  * @param {string} date - 日付文字列（YYYY-MM-DD形式）
  * @param {number} weight - 体重（kg）
  * @param {number} bodyFat - 体脂肪率（%）
+ * @param {number} bmi - BMI（オプション）
  * @returns {boolean} 保存成功の可否
  */
-function saveData(date, weight, bodyFat) {
+function saveData(date, weight, bodyFat, bmi = null) {
     try {
         const allData = getAllData();
-        allData[date] = {
+        const dataEntry = {
             weight: parseFloat(weight),
             bodyFat: parseFloat(bodyFat),
             timestamp: new Date().toISOString()
         };
+        if (bmi !== null) {
+            dataEntry.bmi = parseFloat(bmi);
+        }
+        allData[date] = dataEntry;
         localStorage.setItem(STORAGE_KEY, JSON.stringify(allData));
         return true;
     } catch (error) {
@@ -106,4 +112,84 @@ function formatDate(date) {
     const month = String(date.getMonth() + 1).padStart(2, '0');
     const day = String(date.getDate()).padStart(2, '0');
     return `${year}-${month}-${day}`;
+}
+
+/**
+ * 設定を保存
+ * @param {Object} settings - 設定オブジェクト
+ * @returns {boolean} 保存成功の可否
+ */
+function saveSettings(settings) {
+    try {
+        localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+        return true;
+    } catch (error) {
+        console.error('設定保存エラー:', error);
+        return false;
+    }
+}
+
+/**
+ * 設定を取得
+ * @returns {Object} 設定オブジェクト
+ */
+function getSettings() {
+    try {
+        const settings = localStorage.getItem(SETTINGS_KEY);
+        return settings ? JSON.parse(settings) : {};
+    } catch (error) {
+        console.error('設定取得エラー:', error);
+        return {};
+    }
+}
+
+/**
+ * 身長を取得
+ * @returns {number|null} 身長（cm）
+ */
+function getHeight() {
+    const settings = getSettings();
+    return settings.height || null;
+}
+
+/**
+ * 身長を保存
+ * @param {number} height - 身長（cm）
+ * @returns {boolean} 保存成功の可否
+ */
+function saveHeight(height) {
+    const settings = getSettings();
+    settings.height = parseFloat(height);
+    return saveSettings(settings);
+}
+
+/**
+ * BMIを計算
+ * @param {number} weight - 体重（kg）
+ * @param {number} height - 身長（cm）
+ * @returns {number|null} BMI
+ */
+function calculateBMI(weight, height) {
+    if (!weight || !height || height <= 0) {
+        return null;
+    }
+    const heightInMeters = height / 100;
+    return weight / (heightInMeters * heightInMeters);
+}
+
+/**
+ * BMIカテゴリーを取得
+ * @param {number} bmi - BMI値
+ * @returns {Object} {category: string, label: string}
+ */
+function getBMICategory(bmi) {
+    if (bmi < 18.5) {
+        return { category: 'underweight', label: '低体重' };
+    } else if (bmi < 25) {
+        return { category: 'normal', label: '普通体重' };
+    } else if (bmi < 30) {
+        return { category: 'overweight', label: '肥満（1度）' };
+    } else {
+        return { category: 'obese', label: '肥満（2度以上）' };
+    }
 }

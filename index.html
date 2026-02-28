@@ -21,6 +21,7 @@
         <!-- ヘッダー -->
         <header class="header">
             <h1>📊 体重管理アプリ</h1>
+            <button id="settingsBtn" class="settings-btn" title="設定">⚙️</button>
         </header>
 
         <!-- メインコンテンツ -->
@@ -50,6 +51,13 @@
                         <label for="bodyFat">体脂肪率 (%)</label>
                         <input type="number" id="bodyFat" name="bodyFat" step="0.1" min="0" max="100" placeholder="18.5" required>
                     </div>
+                    <div class="bmi-display" id="bmiDisplay" style="display: none;">
+                        <label>BMI</label>
+                        <div class="bmi-value">
+                            <span id="bmiValue">-</span>
+                            <span class="bmi-category" id="bmiCategory"></span>
+                        </div>
+                    </div>
                     <div class="form-buttons">
                         <button type="submit" class="btn btn-primary">保存</button>
                         <button type="button" id="deleteBtn" class="btn btn-danger" style="display: none;">削除</button>
@@ -59,12 +67,38 @@
 
             <!-- グラフセクション -->
             <section class="chart-section">
-                <h2>推移グラフ（直近30日）</h2>
+                <h2>推移グラフ</h2>
+                <div class="chart-period-selector">
+                    <button class="period-btn active" data-period="30">30日</button>
+                    <button class="period-btn" data-period="90">3ヶ月</button>
+                    <button class="period-btn" data-period="180">6ヶ月</button>
+                    <button class="period-btn" data-period="365">1年</button>
+                </div>
                 <div class="chart-container">
                     <canvas id="weightChart"></canvas>
                 </div>
             </section>
         </main>
+    </div>
+
+    <!-- 身長設定モーダル -->
+    <div id="settingsModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>⚙️ 設定</h2>
+                <button class="modal-close" id="closeModal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="heightInput">身長 (cm)</label>
+                    <input type="number" id="heightInput" step="0.1" min="100" max="250" placeholder="170.0">
+                    <small>BMI計算に使用されます</small>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="saveSettings" class="btn btn-primary">保存</button>
+            </div>
+        </div>
     </div>
 
     <!-- Chart.js CDN -->
