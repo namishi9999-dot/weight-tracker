@@ -73,6 +73,23 @@ function setupEventListeners() {
             btn.classList.add('active');
         });
     });
+
+    // CSVエクスポートボタン
+    const exportCsvBtn = document.getElementById('exportCsvBtn');
+    exportCsvBtn.addEventListener('click', () => {
+        exportCSV();
+    });
+
+    // CSVインポート（ファイル選択）
+    const importCsvInput = document.getElementById('importCsvInput');
+    importCsvInput.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            importCSV(file);
+            // 同じファイルを再度選択できるようにリセット
+            e.target.value = '';
+        }
+    });
 }
 
 /**

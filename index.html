@@ -6,10 +6,15 @@
     <meta name="description" content="日々の体重と体脂肪率を記録・管理するWebアプリ">
     <meta name="theme-color" content="#4CAF50">
 
+    <!-- iOS PWA設定 -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="体重管理">
+
     <!-- PWA設定 -->
     <link rel="manifest" href="./manifest.json">
     <link rel="icon" type="image/svg+xml" href="./icons/favicon.svg">
-    <link rel="apple-touch-icon" href="./icons/favicon.svg">
+    <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png">
 
     <title>体重管理アプリ</title>
 
@@ -94,6 +99,16 @@
                     <input type="number" id="heightInput" step="0.1" min="100" max="250" placeholder="170.0">
                     <small>BMI計算に使用されます</small>
                 </div>
+
+                <div class="settings-section">
+                    <h3>データ管理</h3>
+                    <div class="data-management-buttons">
+                        <button type="button" id="exportCsvBtn" class="btn btn-secondary">📤 CSVエクスポート</button>
+                        <label for="importCsvInput" class="btn btn-secondary import-label">📥 CSVインポート</label>
+                        <input type="file" id="importCsvInput" accept=".csv" class="visually-hidden">
+                    </div>
+                    <small>エクスポート: データをCSVファイルとして保存/共有<br>インポート: CSVファイルからデータを読み込む</small>
+                </div>
             </div>
             <div class="modal-footer">
                 <button id="saveSettings" class="btn btn-primary">保存</button>
@@ -108,6 +123,17 @@
     <script src="./js/storage.js"></script>
     <script src="./js/calendar.js"></script>
     <script src="./js/chart.js"></script>
+    <script src="./js/csv.js"></script>
     <script src="./js/app.js"></script>
+
+    <!-- Service Worker 登録 -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js')
+                    .catch((err) => console.error('Service Worker登録失敗:', err));
+            });
+        }
+    </script>
 </body>
 </html>
